@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>SERVERS</title>
+	<script src="/socket.io/socket.io.js"></script>
+	<link rel="stylesheet" href="css/style.css">
+	<script>
+		var socket = io.connect();
+
+		function tratarRequisicao(requisicao) {
+			switch (requisicao) {
+				case '0':
+					return 'DESLIGAR SALA';
+				case '1':
+					return 'LIGAR SALA';
+				default:
+					return requisicao;
+			}
+		}
+
+		socket.on('atualizar mensagens', function (data) {
+			var mensagens = document.getElementById('mensagens');
+			var novaLinha = document.createElement('tr');
+
+			var colunas = data.msg.split(';');
+			if (colunas.length >= 4) {
+				var ip = document.createElement('td');
+				ip.textContent = colunas[0];
+				novaLinha.appendChild(ip);
+
+				var opcaoUsuario = document.createElement('td');
+				opcaoUsuario.textContent = colunas[1];
+				novaLinha.appendChild(opcaoUsuario);
+
+				var requisicao = document.createElement('td');
+				requisicao.textContent = tratarRequisicao(colunas[2]);
+				novaLinha.appendChild(requisicao);
+
+				var ipDestino = document.createElement('td');
+				ipDestino.textContent = colunas[3];
+				novaLinha.appendChild(ipDestino);
+
+				mensagens.appendChild(novaLinha);
+			}
+		});
+	</script>
+</head>
+
+<body>
+	<h1>SERVERS</h1>
+	<table>
+		<thead>
+			<tr>
+				<th>IP</th>
+				<th>OPÇÃO DO USUÁRIO</th>
+				<th>REQUISIÇÃO</th>
+				<th>IP DESTINO</th>
+			</tr>
+		</thead>
+		<tbody id="mensagens">
+		</tbody>
+	</table>
+</body>
+
+</html>
