@@ -4,9 +4,8 @@ var io = require('socket.io');
 var net = require('net');
 
 const PORTA_HTTP = 3000;
-const PORTA_TCP = 4000; // Porta para o servidor TCP
+const PORTA_TCP = 4000;
 
-// Servidor HTTP simples
 var app = http.createServer(function (req, res) {
     var arquivo = "";
     if (req.url == "/") {
@@ -28,18 +27,15 @@ io = io(app);
 app.listen(PORTA_HTTP);
 console.log("Servidor HTTP está em execução na porta " + PORTA_HTTP);
 
-// Servidor TCP para receber mensagens do servidor Java
 var tcpServer = net.createServer(function (socket) {
     console.log('Conexão TCP recebida de ' + socket.remoteAddress + ':' + socket.remotePort);
 
     socket.on('data', function (data) {
         try {
-            // Parse da mensagem como JSON
             var mensagemJson = JSON.parse(data.toString());
             console.log('Mensagem JSON recebida:', mensagemJson);
 
             var obj_mensagem = { msg: JSON.stringify(mensagemJson), tipo: 'sistema' };
-            // Emite a mensagem para todos os clientes conectados via socket.io
             io.sockets.emit("atualizar mensagens", obj_mensagem);
         } catch (err) {
             console.error('Erro ao parsear mensagem JSON:', err);
