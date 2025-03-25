@@ -6,8 +6,6 @@
 	<title>Monitoramento do Servidor</title>
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet"
 		integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
-	<script src="/socket.io/socket.io.js"></script>
-	<!-- Chart.js para o gráfico -->
 	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 	<style>
@@ -90,7 +88,6 @@
 				</div>
 			</div>
 
-			<!-- Grid 2: Tabela de operações -->
 			<div class="col-md-6">
 				<div class="card-custom">
 					<h4>Operações</h4>
@@ -111,7 +108,6 @@
 		</div>
 
 		<div class="row">
-			<!-- Grid 3: Gráfico de operações por servidor -->
 			<div class="col-md-6">
 				<div class="card-custom">
 					<h4>Operações por Servidor</h4>
@@ -129,7 +125,6 @@
 		</div>
 	</div>
 
-	<!-- Modal para detalhes da operação -->
 	<div class="modal fade" id="operationModal" tabindex="-1" aria-hidden="true">
 		<div class="modal-dialog modal-dialog-centered">
 			<div class="modal-content">
@@ -140,7 +135,8 @@
 				<div class="modal-body">
 					<p><strong>Endereço do Servidor:</strong> <span id="modal-server-address"></span></p>
 					<p><strong>Operação:</strong> <span id="modal-operation"></span></p>
-					<p><strong>Header:</strong> <span id="modal-header-info"></span></p>
+					<p><strong>Data:</strong> <span id="modal-date-info"></span></p>
+					<p><strong>Opção:</strong> <span id="modal-header-info"></span></p>
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
@@ -152,109 +148,128 @@
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
 		integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4"
 		crossorigin="anonymous"></script>
+	<script src="/socket.io/socket.io.js"></script>
 	<script>
-		var socket = io.connect();
-
-		// Armazena informações sobre servidores e microcontroladores
-		// Ex: {"127.0.0.1:4000": Set([10,11,12])}
 		var serverMicroMap = {};
-
-		// Contador de operações
-		var operationCount = 0;
-
-		// Para o gráfico: contagem de operações por servidor
 		var serverOpCount = {};
+		var operationCount = 0;
+		var modalServerAddress;
+		var modalOperation;
+		var modalHeaderInfo;
+		var modalDateInfo;
+		var operationModal;
 
-		// Referências a elementos HTML
-		var operationsBody = document.getElementById('operations-body');
-		var serverList = document.getElementById('server-list');
+		document.addEventListener('DOMContentLoaded', function () {
+			operationsBody = document.getElementById('operations-body');
+			modalServerAddress = document.getElementById('modal-server-address');
+			modalOperation = document.getElementById('modal-operation');
+			modalHeaderInfo = document.getElementById('modal-header-info');
+			modalDateInfo = document.getElementById('modal-date-info');
 
-		// Modal
-		var modalServerAddress = document.getElementById('modal-server-address');
-		var modalOperation = document.getElementById('modal-operation');
-		var modalHeaderInfo = document.getElementById('modal-header-info');
-		var operationModal = new bootstrap.Modal(document.getElementById('operationModal'));
+			var modalElement = document.getElementById('operationModal');
+			operationModal = new bootstrap.Modal(modalElement);
 
-		// Gráfico
-		var ctx = document.getElementById('operationsChart').getContext('2d');
-		var operationsChart = new Chart(ctx, {
-			type: 'bar',
-			data: {
-				labels: [],
-				datasets: [{
-					label: 'Número de Operações',
-					data: []
-				}]
-			},
-			options: {
-				scales: {
-					y: {
-						beginAtZero: true
-					}
-				}
-			}
+			var ctx = document.getElementById('operationsChart').getContext('2d');
+			window.operationsChart = new Chart(ctx, {
+				type: 'bar',
+				data: {
+					labels: [],
+					datasets: [{
+						label: 'Operações',
+						data: [],
+						backgroundColor: 'rgba(54, 162, 235, 0.5)'
+					}]
+				},
+				options: {}
+			});
 		});
 
-		// Atualiza a List Group de servidores
 		function updateServerList() {
-			serverList.innerHTML = "";
-			for (const [server, mcs] of Object.entries(serverMicroMap)) {
-				var li = document.createElement('li');
-				li.className = "list-group-item";
-				li.textContent = server + " - Microcontroladores: " + mcs.size;
+			var serverList = document.getElementById('server-list');
+			serverList.innerHTML = '';
+			for (let srv in serverMicroMap) {
+				const li = document.createElement('li');
+				li.className = 'list-group-item';
+				li.textContent = `${srv} - Microcontroladores: ${[...serverMicroMap[srv]].length}`;
 				serverList.appendChild(li);
 			}
 		}
 
-		// Atualiza o gráfico
 		function updateChart() {
-			operationsChart.data.labels = Object.keys(serverOpCount);
-			operationsChart.data.datasets[0].data = Object.values(serverOpCount);
-			operationsChart.update();
+			var chart = window.operationsChart;
+			chart.data.labels = Object.keys(serverOpCount);
+			chart.data.datasets[0].data = Object.keys(serverOpCount).map(k => serverOpCount[k]);
+			chart.update();
 		}
 
+		var socket = io();
+
 		socket.on('atualizar mensagens', function (data) {
-			console.log("Recebido:", data);
+			try {
+				var mensagem = JSON.parse(data.msg);
 
-			var mensagem = data.msg;
-			var colunas = mensagem.split('.');
+				if (!mensagem.endereco || !mensagem.porta || !mensagem.mensagem) {
+					console.error('Mensagem incompleta:', mensagem);
+					return;
+				}
 
-			// Esperado: colunas[0] = endereco servidor, colunas[1] = porta, colunas[2] = operacao
-			// colunas.slice(3) = IDs dos microcontroladores
-			if (colunas.length < 3) return;
+				var serverAddress = `${mensagem.endereco}:${mensagem.porta}`;
+				var operation = mensagem.mensagem;
 
-			var serverAddress = colunas[0] + ":" + colunas[1];
-			var operation = colunas[2];
-			var microIds = colunas.slice(3);
+				var horario = '';
+				var dataStr = '';
+				if (mensagem.horario) {
+					var dataHora = new Date(mensagem.horario);
+					var hours = dataHora.getHours().toString().padStart(2, '0');
+					var minutes = dataHora.getMinutes().toString().padStart(2, '0');
+					var seconds = dataHora.getSeconds().toString().padStart(2, '0');
+					var day = dataHora.getDate().toString().padStart(2, '0');
+					var month = (dataHora.getMonth() + 1).toString().padStart(2, '0');
+					var year = dataHora.getFullYear();
 
-			// Atualiza map de servidores e microcontroladores
-			if (!serverMicroMap[serverAddress]) {
-				serverMicroMap[serverAddress] = new Set();
+					horario = `${hours}:${minutes}:${seconds}`;
+					dataStr = `${day}/${month}/${year}`;
+				}
+
+				if (!serverMicroMap[serverAddress]) {
+					serverMicroMap[serverAddress] = new Set();
+				}
+				if (mensagem.microcontrolador_id !== undefined) {
+					serverMicroMap[serverAddress].add(mensagem.microcontrolador_id);
+				}
+				updateServerList();
+
+				operationCount++;
+
+				var tr = document.createElement('tr');
+				tr.innerHTML = `<td>${operationCount}</td><td>${serverAddress}</td><td>${operation}</td><td>${horario}</td>`;
+
+				tr.addEventListener('click', function () {
+					modalServerAddress.textContent = serverAddress;
+					modalOperation.textContent = operation;
+
+					var opcaoTexto = '';
+					if (mensagem.opcao === 0) {
+						opcaoTexto = 'DESLIGAR APARELHO';
+					} else if (mensagem.opcao === 1) {
+						opcaoTexto = 'LIGAR APARELHO';
+					} else if (mensagem.opcao === 2) {
+						opcaoTexto = 'DESCREVER APARELHO';
+					}
+
+					modalHeaderInfo.textContent = opcaoTexto;
+					modalDateInfo.textContent = dataStr;
+					operationModal.show();
+				});
+
+				operationsBody.appendChild(tr);
+
+				if (!serverOpCount[serverAddress]) serverOpCount[serverAddress] = 0;
+				serverOpCount[serverAddress]++;
+				updateChart();
+			} catch (err) {
+				console.error('Erro ao processar mensagem:', err);
 			}
-			microIds.forEach(id => serverMicroMap[serverAddress].add(id));
-			updateServerList();
-
-			// Incrementa contador de operação
-			operationCount++;
-			// Adiciona linha na tabela
-			var tr = document.createElement('tr');
-			tr.innerHTML = `<td>${operationCount}</td><td>${serverAddress}</td><td>${operation}</td>`;
-
-			// Ao clicar na linha, abre modal
-			tr.addEventListener('click', function () {
-				// Preenche modal
-				modalServerAddress.textContent = serverAddress;
-				modalOperation.textContent = operation;
-				modalHeaderInfo.textContent = mensagem; // headers completos da mensagem
-				operationModal.show();
-			});
-
-			operationsBody.appendChild(tr);
-
-			// Atualiza contagem de operações por servidor
-			if (!serverOpCount[serverAddress]) serverOpCount[serverAddress] = 0;
-			serverOpCount[serverAddress]++;
-			updateChart();
 		});
 	</script>
 </body>
