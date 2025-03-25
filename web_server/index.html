@@ -9,6 +9,7 @@
 	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 	<style>
+		html,
 		body {
 			background: #f4f7f9;
 			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -78,13 +79,10 @@
 
 	<div class="container-fluid">
 		<div class="row mb-4">
-			<!-- Grid 1: List group (Servidor e qtd. microcontroladores) -->
 			<div class="col-md-6">
 				<div class="card-custom">
-					<h4>Servidores e Microcontroladores</h4>
-					<ul class="list-group" id="server-list">
-						<!-- Será populado dinamicamente -->
-					</ul>
+					<h4>Operações por Servidor</h4>
+					<canvas id="operationsChart"></canvas>
 				</div>
 			</div>
 
@@ -97,31 +95,14 @@
 								<th>Num. Operação</th>
 								<th>Endereço Servidor</th>
 								<th>Requisição</th>
+								<th>Horário</th>
 							</tr>
 						</thead>
 						<tbody id="operations-body">
-							<!-- Linhas adicionadas dinamicamente -->
 						</tbody>
 					</table>
 				</div>
 			</div>
-		</div>
-
-		<div class="row">
-			<div class="col-md-6">
-				<div class="card-custom">
-					<h4>Operações por Servidor</h4>
-					<canvas id="operationsChart"></canvas>
-				</div>
-			</div>
-
-			<!-- Grid 4: Reservado ou vazio -->
-			<!-- <div class="col-md-6">
-				<div class="card-custom">
-					<h4>Outro painel</h4>
-					<p>Espaço reservado para futuras informações.</p>
-				</div>
-			</div> -->
 		</div>
 	</div>
 
@@ -208,6 +189,7 @@
 			try {
 				var mensagem = JSON.parse(data.msg);
 
+				// Verifica se a mensagem contém os dados necessários
 				if (!mensagem.endereco || !mensagem.porta || !mensagem.mensagem) {
 					console.error('Mensagem incompleta:', mensagem);
 					return;
@@ -231,13 +213,15 @@
 					dataStr = `${day}/${month}/${year}`;
 				}
 
+				// Atualiza o mapa de servidores (opcional, se necessário)
 				if (!serverMicroMap[serverAddress]) {
 					serverMicroMap[serverAddress] = new Set();
 				}
 				if (mensagem.microcontrolador_id !== undefined) {
 					serverMicroMap[serverAddress].add(mensagem.microcontrolador_id);
 				}
-				updateServerList();
+				// Remova ou comente esta linha se não tiver o elemento "server-list":
+				// updateServerList();
 
 				operationCount++;
 
@@ -271,6 +255,7 @@
 				console.error('Erro ao processar mensagem:', err);
 			}
 		});
+
 	</script>
 </body>
 
