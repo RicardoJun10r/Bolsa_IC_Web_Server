@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 
 <head>
 	<meta charset="UTF-8">
@@ -9,15 +9,71 @@
 	<script src="/socket.io/socket.io.js"></script>
 	<!-- Chart.js para o gráfico -->
 	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+	<style>
+		body {
+			background: #f4f7f9;
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+		}
+
+		/* Navbar customizada */
+		.navbar {
+			background: linear-gradient(45deg, #4e54c8, #8f94fb);
+			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+		}
+
+		.navbar-brand span {
+			color: #fff;
+		}
+
+		/* Cartões para seções */
+		.card-custom {
+			background: #fff;
+			border-radius: 8px;
+			box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+			padding: 20px;
+			margin-bottom: 20px;
+		}
+
+		h4 {
+			color: #333;
+			margin-bottom: 15px;
+		}
+
+		/* Tabela estilizada */
+		.table thead th {
+			background-color: #4e54c8;
+			color: #fff;
+		}
+
+		/* Estilo para list group */
+		.list-group-item {
+			background-color: #fff;
+			border: 1px solid #e1e1e1;
+			margin-bottom: 8px;
+			border-radius: 4px;
+		}
+
+		/* Hover na linha da tabela */
+		tr:hover {
+			background-color: #f1f1f1;
+			cursor: pointer;
+		}
+
+		/* Modal customizado */
+		.modal-content {
+			border-radius: 8px;
+		}
+	</style>
 </head>
 
 <body>
 	<!-- Navbar reintroduzida -->
-	<nav class="navbar navbar-expand-lg bg-secondary mb-4">
+	<nav class="navbar navbar-expand-lg mb-4">
 		<div class="container-fluid">
 			<a class="navbar-brand" href="/">
 				<img src="assets/icone_bolsa_pibic.jpeg" alt="icone" width="60" height="55">
-				<span class="display-6" style="padding: 20px 20px 20px 20px;">Painel de Controle</span>
+				<span class="display-6 ms-3">Painel de Controle</span>
 			</a>
 		</div>
 	</nav>
@@ -25,43 +81,51 @@
 	<div class="container-fluid">
 		<div class="row mb-4">
 			<!-- Grid 1: List group (Servidor e qtd. microcontroladores) -->
-			<div class="col-md-6" id="server-info-col">
-				<h4>Servidores e Microcontroladores</h4>
-				<ul class="list-group" id="server-list">
-					<!-- Será populado dinamicamente -->
-				</ul>
+			<div class="col-md-6">
+				<div class="card-custom">
+					<h4>Servidores e Microcontroladores</h4>
+					<ul class="list-group" id="server-list">
+						<!-- Será populado dinamicamente -->
+					</ul>
+				</div>
 			</div>
 
 			<!-- Grid 2: Tabela de operações -->
 			<div class="col-md-6">
-				<h4>Operações</h4>
-				<table class="table table-striped table-hover" id="operations-table">
-					<thead>
-						<tr>
-							<th>Num. Operação</th>
-							<th>Endereço Servidor</th>
-							<th>Requisição</th>
-						</tr>
-					</thead>
-					<tbody id="operations-body">
-						<!-- Linhas adicionadas dinamicamente -->
-					</tbody>
-				</table>
+				<div class="card-custom">
+					<h4>Operações</h4>
+					<table class="table table-striped table-hover" id="operations-table">
+						<thead>
+							<tr>
+								<th>Num. Operação</th>
+								<th>Endereço Servidor</th>
+								<th>Requisição</th>
+							</tr>
+						</thead>
+						<tbody id="operations-body">
+							<!-- Linhas adicionadas dinamicamente -->
+						</tbody>
+					</table>
+				</div>
 			</div>
 		</div>
 
 		<div class="row">
 			<!-- Grid 3: Gráfico de operações por servidor -->
 			<div class="col-md-6">
-				<h4>Operações por Servidor</h4>
-				<canvas id="operationsChart"></canvas>
+				<div class="card-custom">
+					<h4>Operações por Servidor</h4>
+					<canvas id="operationsChart"></canvas>
+				</div>
 			</div>
 
 			<!-- Grid 4: Reservado ou vazio -->
-			<div class="col-md-6">
-				<h4>Outro painel</h4>
-				<p>Espaço reservado para futuras informações.</p>
-			</div>
+			<!-- <div class="col-md-6">
+				<div class="card-custom">
+					<h4>Outro painel</h4>
+					<p>Espaço reservado para futuras informações.</p>
+				</div>
+			</div> -->
 		</div>
 	</div>
 
